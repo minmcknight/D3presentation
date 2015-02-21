@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="styles.css">
+<script src="http://d3js.org/d3.v3.min.js" type="text/JavaScript"></script>
+<script src="http://d3js.org/colorbrewer.v1.min.js" type="text/JavaScript"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+</head>
+<body>
+<div id="vizcontainer">
+<svg style="width:500px;height:500px;border:1px lightgray solid;" />
+</div>
+<button id="start">Start</button>
+<button id="stop">Stop</button>
+
+<script>
+//modified from chapter7, d3js in action
+    d3.json("world.geojson", createMap);
+    var w = 500;
+    var h = 500;
+    var aProjection = d3.geo.orthographic().scale(200)
+            .translate([w/2,h/2])
+            .clipAngle(90);
+     var geoPath = d3.geo.path().projection(aProjection);
+
+ function createMap(countries)   {
+  
+  
+	//get the area of the feature
+	var featureSize = d3.extent(countries.features, 
+		     function(d) {
+				return geoPath.area(d);
+		});
+
+	//grab a color from a range of 9 greens by feature size
+	var countryColor = d3.scale.quantize().domain(featureSize)
+	          .range(colorbrewer.Greens[9]);
+    //load country data 
+    d3.select("svg").selectAll("path").data(countries.features)
+    .enter()
+    .append("path")
+    .attr("d", geoPath)
+    .attr("class", "countries")
+    .style("fill", function(d) {
+		 return countryColor(geoPath.area(d));
+	  });
+	
+	var graticule = d3.geo.graticule();
+
+	d3.select("svg").append("path")
+	.datum(graticule.outline)
+	.attr("class", "graticule outline")
+	.attr("d", geoPath)
+	.style("fill", "none")
+	.style("stroke", "black")
+	.style("stroke-width", "1px");
+ };
+
+//keep track of rotation angle from normal
+var rotation = 0;
+
+//rotate map one degree from current rotation
+function rotateMap() {
+	aProjection.rotate([rotation++, 0]);
+  	d3.select("svg").selectAll("path").attr("d", geoPath);
+}
+
+//stub ID for the timer that fires the globe rotation
+var rotIntv = 0;
+//rotation interval in ms
+var rotationInterval = 200;
+//start button id to begin rotation
+$("#start").on("click", function(){ 
+	rotIntv = window.setInterval(rotateMap, rotationInterval)
+});
+//stop button id to stop rotation
+$("#stop").on("click", function(){ window.clearInterval(rotIntv)});
+
+
+</script>
+</body>
+</html>
